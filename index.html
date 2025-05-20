@@ -1,96 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="bn">
 <head>
-  <title>Marks Entry</title>
-  <style>
-    body { font-family: sans-serif; background: #f0f0f0; padding: 30px; }
-    .container { max-width: 400px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 0 10px #ccc; }
-    select, input, button { width: 100%; padding: 10px; margin-top: 10px; }
-    #finishMessage { color: green; text-align: center; margin-top: 20px; font-weight: bold; }
-  </style>
+  <meta charset="UTF-8">
+  <title>SMS Sender</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="container">
-    <h2>Marks Entry</h2>
-    <select id="subjectSelect">
-      <option value="">Select Subject</option>
-    </select>
+<body class="bg-gradient-to-r from-blue-100 to-purple-200 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md">
+    <h2 class="text-3xl font-bold text-center text-blue-600 mb-6">Bulk SMS Sender</h2>
+    
+    <form id="smsForm" class="space-y-4">
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">মোবাইল নাম্বারসমূহ (কমা দিয়ে আলাদা করুন)</label>
+        <input type="text" id="numbers" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="016xxxxxxxx, 018xxxxxxxx" required>
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">মেসেজ</label>
+        <textarea id="message" rows="4" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="আপনার মেসেজ লিখুন..." required></textarea>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+        মেসেজ পাঠান
+      </button>
+    </form>
 
-    <div id="formArea" style="display:none;">
-      <p id="studentInfo"></p>
-      <input type="number" id="markInput" placeholder="Enter Mark" />
-      <button onclick="submitMark()">Submit</button>
-    </div>
-
-    <div id="finishMessage" style="display:none;">All students completed!</div>
+    <div id="response" class="mt-4 text-sm text-gray-800 whitespace-pre-wrap"></div>
   </div>
 
   <script>
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbzkyyuDM3lp8BBhAHYYGJ72BrDUf5Cs90nPwoE9oKntHfI60w0rpSjUAIr4Hwm1DoMg-g/exec';
-    let students = [];
-    let currentIndex = 0;
-    let selectedSubject = '';
+    const form = document.getElementById('smsForm');
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
 
-    async function loadStudents() {
-      const res = await fetch(apiUrl);
-      students = await res.json();
-      if (students.length > 0) {
-        const keys = Object.keys(students[0]).filter(k => k !== 'Roll' && k.toLowerCase() !== 'name');
-        const sel = document.getElementById('subjectSelect');
-        keys.forEach(k => {
-          const option = document.createElement('option');
-          option.value = k;
-          option.textContent = k;
-          sel.appendChild(option);
-        });
+      const numbers = document.getElementById('numbers').value.split(',').map(n => n.trim());
+      const message = document.getElementById('message').value;
+      const apiKey = "NXri2cvcrank4t931wY1";
+      const senderId = "8809617613401";
 
-        sel.onchange = () => {
-          selectedSubject = sel.value;
-          if (selectedSubject) {
-            document.getElementById('formArea').style.display = 'block';
-            currentIndex = 0;
-            showStudent();
-          }
-        };
-      }
-    }
+      const messages = numbers.map(number => ({
+        to: number.startsWith("880") ? number : "88" + number,
+        message: message
+      }));
 
-    function showStudent() {
-      if (currentIndex < students.length) {
-        const s = students[currentIndex];
-        document.getElementById('studentInfo').innerText = `Roll: ${s.Roll} | Name: ${s.Name}`;
-        document.getElementById('markInput').value = '';
-      } else {
-        document.getElementById('formArea').style.display = 'none';
-        document.getElementById('finishMessage').style.display = 'block';
-      }
-    }
-
-    async function submitMark() {
-      const mark = document.getElementById('markInput').value;
-      if (!mark) {
-        alert("Please enter a mark.");
-        return;
-      }
-
-      const s = students[currentIndex];
-      await fetch(apiUrl, {
-        method: 'POST',
+      fetch("http://bulksmsbd.net/api/smsapimany", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          Roll: s.Roll,
-          Subject: selectedSubject,
-          Mark: mark
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+          api_key: apiKey,
+          senderid: senderId,
+          messages: messages
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("response").innerText = "✅ মেসেজ পাঠানো সফল:\n" + JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        document.getElementById("response").innerText = "❌ সমস্যা হয়েছে:\n" + err.message;
       });
-
-      currentIndex++;
-      showStudent();
-    }
-
-    loadStudents();
+    });
   </script>
 </body>
 </html>
