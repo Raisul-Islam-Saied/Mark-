@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="bn">
+<!DOCTYPE html><html lang="bn">
 <head>
   <meta charset="UTF-8">
   <title>SMS Sender</title>
@@ -7,26 +6,23 @@
 </head>
 <body class="bg-gradient-to-r from-blue-100 to-purple-200 min-h-screen flex items-center justify-center p-4">
   <div class="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md">
-    <h2 class="text-3xl font-bold text-center text-blue-600 mb-6">Bulk SMS Sender</h2>
-    
-    <form id="smsForm" class="space-y-4">
-      <div>
-        <label class="block text-gray-700 font-medium mb-1">মোবাইল নাম্বারসমূহ (কমা দিয়ে আলাদা করুন)</label>
-        <input type="text" id="numbers" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="016xxxxxxxx, 018xxxxxxxx" required>
-      </div>
-      <div>
-        <label class="block text-gray-700 font-medium mb-1">মেসেজ</label>
-        <textarea id="message" rows="4" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="আপনার মেসেজ লিখুন..." required></textarea>
-      </div>
-      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
-        মেসেজ পাঠান
-      </button>
-    </form>
-
-    <div id="response" class="mt-4 text-sm text-gray-800 whitespace-pre-wrap"></div>
+    <h2 class="text-3xl font-bold text-center text-blue-600 mb-6">Bulk SMS Sender</h2><form id="smsForm" class="space-y-4">
+  <div>
+    <label class="block text-gray-700 font-medium mb-1">মোবাইল নাম্বারসমূহ (কমা দিয়ে আলাদা করুন)</label>
+    <input type="text" id="numbers" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="016xxxxxxxx, 018xxxxxxxx" required>
   </div>
+  <div>
+    <label class="block text-gray-700 font-medium mb-1">মেসেজ</label>
+    <textarea id="message" rows="4" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="আপনার মেসেজ লিখুন..." required></textarea>
+  </div>
+  <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+    মেসেজ পাঠান
+  </button>
+</form>
 
-  <script>
+<div id="response" class="mt-4 text-sm text-gray-800 whitespace-pre-wrap"></div>
+
+  </div>  <script>
     const form = document.getElementById('smsForm');
     form.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -36,28 +32,36 @@
       const apiKey = "NXri2cvcrank4t931wY1";
       const senderId = "8809617613401";
 
-      const messages = numbers.map(number => ({
-        to: number.startsWith("880") ? number : "88" + number,
-        message: message
-      }));
+      let successCount = 0;
+      let failed = [];
 
-      fetch("http://bulksmsbd.net/api/smsapimany", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: apiKey,
-          senderid: senderId,
-          messages: messages
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("response").innerText = "✅ মেসেজ পাঠানো সফল:\n" + JSON.stringify(data, null, 2);
-      })
-      .catch(err => {
-        document.getElementById("response").innerText = "❌ সমস্যা হয়েছে:\n" + err.message;
+      numbers.forEach(number => {
+        const fullNumber = number.startsWith("880") ? number : "88" + number;
+        const url = `http://bulksmsbd.net/api/smsapi?api_key=${apiKey}&type=text&number=${fullNumber}&senderid=${senderId}&message=${encodeURIComponent(message)}`;
+
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            if (data.response_code === "SUCCESS") {
+              successCount++;
+            } else {
+              failed.push({ number: fullNumber, reason: data.message });
+            }
+            showResponse();
+          })
+          .catch(err => {
+            failed.push({ number: fullNumber, reason: err.message });
+            showResponse();
+          });
       });
+
+      function showResponse() {
+        const responseBox = document.getElementById("response");
+        responseBox.innerText = `✅ সফল: ${successCount}টি মেসেজ পাঠানো হয়েছে\n❌ ব্যর্থ: ${failed.length}`;
+        if (failed.length) {
+          responseBox.innerText += `\n\nবিস্তারিত:\n` + failed.map(f => `${f.number}: ${f.reason}`).join("\n");
+        }
+      }
     });
-  </script>
-</body>
+  </script></body>
 </html>
