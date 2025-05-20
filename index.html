@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Marks Entry</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f0f0; padding: 30px; }
+    .container { max-width: 400px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 0 10px #ccc; }
+    select, input, button { width: 100%; padding: 10px; margin-top: 10px; }
+    #finishMessage { color: green; text-align: center; margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Marks Entry</h2>
+    <select id="subjectSelect">
+      <option value="">Select Subject</option>
+    </select>
+
+    <div id="formArea" style="display:none;">
+      <p id="studentInfo"></p>
+      <input type="number" id="markInput" placeholder="Enter Mark" />
+      <button onclick="submitMark()">Submit</button>
+    </div>
+
+    <div id="finishMessage" style="display:none;">All students completed!</div>
+  </div>
+
+  <script>
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbzkyyuDM3lp8BBhAHYYGJ72BrDUf5Cs90nPwoE9oKntHfI60w0rpSjUAIr4Hwm1DoMg-g/exec';
+    let students = [];
+    let currentIndex = 0;
+    let selectedSubject = '';
+
+    async function loadStudents() {
+      const res = await fetch(apiUrl);
+      students = await res.json();
+      if (students.length > 0) {
+        const keys = Object.keys(students[0]).filter(k => k !== 'Roll' && k.toLowerCase() !== 'name');
+        const sel = document.getElementById('subjectSelect');
+        keys.forEach(k => {
+          const option = document.createElement('option');
+          option.value = k;
+          option.textContent = k;
+          sel.appendChild(option);
+        });
+
+        sel.onchange = () => {
+          selectedSubject = sel.value;
+          if (selectedSubject) {
+            document.getElementById('formArea').style.display = 'block';
+            currentIndex = 0;
+            showStudent();
+          }
+        };
+      }
+    }
+
+    function showStudent() {
+      if (currentIndex < students.length) {
+        const s = students[currentIndex];
+        document.getElementById('studentInfo').innerText = `Roll: ${s.Roll} | Name: ${s.Name}`;
+        document.getElementById('markInput').value = '';
+      } else {
+        document.getElementById('formArea').style.display = 'none';
+        document.getElementById('finishMessage').style.display = 'block';
+      }
+    }
+
+    async function submitMark() {
+      const mark = document.getElementById('markInput').value;
+      if (!mark) {
+        alert("Please enter a mark.");
+        return;
+      }
+
+      const s = students[currentIndex];
+      await fetch(apiUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+          Roll: s.Roll,
+          Subject: selectedSubject,
+          Mark: mark
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      currentIndex++;
+      showStudent();
+    }
+
+    loadStudents();
+  </script>
+</body>
+</html>
